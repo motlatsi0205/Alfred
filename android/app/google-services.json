@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "307468264353",
+    "project_id": "alfred-ebe8a",
+    "storage_bucket": "alfred-ebe8a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:307468264353:android:3b41328c36a0bcfd7ae1e0",
+        "android_client_info": {
+          "package_name": "alfred.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "307468264353-pitp7rmqiu74jmg9317vsquaf5dpj010.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqJHjunOUdUp00f1qbqdCNtsDWDf090S0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "307468264353-pitp7rmqiu74jmg9317vsquaf5dpj010.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "307468264353-7qcjemeuv8bm84upel8kes5sjl2po84l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.alfredApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:307468264353:android:11ce8ce1a7f373127ae1e0",
+        "android_client_info": {
+          "package_name": "com.example.alfred_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "307468264353-pitp7rmqiu74jmg9317vsquaf5dpj010.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqJHjunOUdUp00f1qbqdCNtsDWDf090S0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "307468264353-pitp7rmqiu74jmg9317vsquaf5dpj010.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "307468264353-7qcjemeuv8bm84upel8kes5sjl2po84l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.alfredApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
