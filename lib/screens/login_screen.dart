@@ -45,7 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final data = doc.data()!;
-      final role = data['role'] as String?;
       final status = data['status'] ?? 'active';
 
       // 🛑 Prevent blocked users from logging in
@@ -57,48 +56,11 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      if (role == null) {
-        throw Exception('User role not set.');
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigation()),
+      );
 
-      // 🧭 Route based on role
-      switch (role) {
-        case 'customer':
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const MainNavigation()),
-          );
-          break;
-
-        case 'store':
-          final storeId = data['storeId'] as String?;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => StoreDashboard(storeId: storeId ?? ''),
-            ),
-          );
-          break;
-
-        case 'driver':
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DriverDashboard()),
-          );
-          break;
-
-        case 'admin':
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminHome()),
-          );
-          break;
-
-        default:
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unknown user role')),
-          );
-      }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Login failed')),
