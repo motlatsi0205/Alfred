@@ -1,5 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -13,42 +14,60 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  User? _user;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _auth.authStateChanges().listen((user) {
+      setState(() {
+        _user = user;
+      });
+      if (user != null) {
+        _loadProfile(user);
+      } else {
+        _clearProfile();
+      }
+    });
   }
 
-  Future<void> _loadProfile() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> _loadProfile(User user) async {
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    if (doc.exists) {
+      final data = doc.data();
+      setState(() {
+        _nameController.text = data?['name'] ?? '';
+        _emailController.text = user.email ?? '';
+      });
+    }
+  }
+
+  void _clearProfile() {
     setState(() {
-      _nameController.text = prefs.getString('profile_name') ?? '';
-      _emailController.text = prefs.getString('profile_email') ?? '';
+      _nameController.clear();
+      _emailController.clear();
     });
   }
 
   Future<void> _saveProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_name', _nameController.text.trim());
-    await prefs.setString('profile_email', _emailController.text.trim());
+    if (_user == null) return;
+    await _firestore.collection('users').doc(_user!.uid).update({
+      'name': _nameController.text.trim(),
+    });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile saved')),
     );
   }
 
-  Future<void> _clearAllData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    setState(() {
-      _nameController.clear();
-      _emailController.clear();
-    });
-
+  Future<void> _logout() async {
+    await _auth.signOut();
+    _clearProfile();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All data cleared')),
+      const SnackBar(content: Text('Logged out')),
     );
   }
 
@@ -77,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   prefixIcon: Icon(Icons.person),
                   border: OutlineInputBorder(),
                 ),
+                enabled: _user != null,
               ),
               const SizedBox(height: 16),
               TextField(
@@ -87,10 +107,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
+                enabled: false,
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
-                onPressed: _saveProfile,
+                onPressed: _user != null ? _saveProfile : null,
                 icon: const Icon(Icons.save),
                 label: const Text('Save Profile'),
                 style: ElevatedButton.styleFrom(
@@ -106,7 +127,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Settings',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          // ✅ New Dark Mode toggle with Provider
           SwitchListTile(
             value: context.watch<ThemeProvider>().isDarkMode,
             onChanged: (value) {
@@ -115,11 +135,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Dark Mode'),
             secondary: const Icon(Icons.dark_mode),
           ),
-          ListTile(
-            leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('Clear All Data'),
-            onTap: _clearAllData,
-          ),
+          if (_user != null)
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout'),
+              onTap: _logout,
+            ),
         ],
       ),
     );
