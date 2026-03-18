@@ -53,7 +53,14 @@ class _HomeScreenState extends State<HomeScreen> {
         page = const DriverDashboard();
         break;
       case 'store':
-        page = const StoreDashboard();
+        final storeId = _userData?['storeId'] as String?;
+        if (storeId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Store ID not found!')),
+          );
+          return;
+        }
+        page = StoreDashboard(storeId: storeId);
         break;
       default:
         return;
