@@ -1,32 +1,104 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:alfred_app/screens/admin_home.dart';
+import 'package:alfred_app/screens/driver_dashboard.dart';
+import 'package:alfred_app/screens/login_screen.dart';
+import 'package:alfred_app/screens/store_dashboard.dart';
 import '../widgets/category_card.dart';
-import 'login_screen.dart'; // <--- ADD THIS IMPORT
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  User? _user;
+  Map<String, dynamic>? _userData;
+
+  @override
+  void initState() {
+    super.initState();
+    FirebaseAuth.instance.authStateChanges().listen((user) async {
+      setState(() {
+        _user = user;
+      });
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+          setState(() {
+            _userData = doc.data();
+          });
+        }
+      } else {
+        setState(() {
+          _userData = null;
+        });
+      }
+    });
+  }
+
+  void _navigateToPanel() {
+    final role = _userData?['role'];
+    if (role == null) return;
+
+    Widget page;
+    switch (role) {
+      case 'admin':
+        page = const AdminHome();
+        break;
+      case 'driver':
+        page = const DriverDashboard();
+        break;
+      case 'store':
+        page = const StoreDashboard();
+        break;
+      default:
+        return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 600;
+    final userRole = _userData?['role'];
+    final canSeePanelButton = userRole == 'admin' || userRole == 'driver' || userRole == 'store';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alfred'),
         backgroundColor: Colors.orange,
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
-            child: const Text(
-              "Login",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          if (_user == null)
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+              child: const Text(
+                "Login",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            )
+          else ...[
+            if (canSeePanelButton)
+              IconButton(
+                icon: const Icon(Icons.dashboard),
+                tooltip: 'Dashboard',
+                onPressed: _navigateToPanel,
+              ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Logout',
+              onPressed: () => FirebaseAuth.instance.signOut(),
             ),
-          ),
+          ],
           const SizedBox(width: 8),
         ],
       ),
@@ -36,7 +108,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Welcome to Alfred!',
+              _user != null ? 'Welcome, ${_userData?['name'] ?? ''}!' : 'Welcome to Alfred!',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
