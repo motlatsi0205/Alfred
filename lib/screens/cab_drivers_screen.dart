@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class CabDriversScreen extends StatelessWidget {
+class CabDriversScreen extends StatefulWidget {
   const CabDriversScreen({super.key});
 
+  @override
+  State<CabDriversScreen> createState() => _CabDriversScreenState();
+}
+
+class _CabDriversScreenState extends State<CabDriversScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,7 +70,9 @@ class CabDriversScreen extends StatelessWidget {
                       } else if (value == 'toggle_available') {
                         _toggleAvailability(doc.id, isAvailable);
                       } else if (value == 'edit') {
-                        _showEditDriverDialog(context, doc);
+                        _showEditDriverDialog(doc);
+                      } else if (value == 'delete') {
+                        _deleteDriver(doc);
                       }
                     },
                     itemBuilder: (_) => [
@@ -88,6 +95,10 @@ class CabDriversScreen extends StatelessWidget {
                       const PopupMenuItem(
                         value: 'edit',
                         child: Text('Edit Driver'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete Driver'),
                       ),
                     ],
                   ),
@@ -119,11 +130,78 @@ class CabDriversScreen extends StatelessWidget {
         .update({'isAvailable': !isAvailable});
   }
 
+  Future<bool> _confirmDialog({
+    required String title,
+    required String message,
+  }) async {
+    bool confirmed = false;
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              confirmed = true;
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed;
+  }
+
+  // 🗑 Delete Driver
+  Future<void> _deleteDriver(DocumentSnapshot driverDoc) async {
+    final confirm = await _confirmDialog(
+      title: 'Delete Driver',
+      message: 'Are you sure you want to permanently delete this driver and their associated user data?',
+    );
+
+    if (!mounted) return;
+
+    if (confirm) {
+      try {
+        final WriteBatch batch = FirebaseFirestore.instance.batch();
+        final driverData = driverDoc.data() as Map<String, dynamic>;
+        final String? ownerId = driverData['ownerUserId'];
+
+        // 1. Delete driver document
+        batch.delete(driverDoc.reference);
+
+        // 2. If there is an owner, delete their user document
+        if (ownerId != null && ownerId.isNotEmpty) {
+          batch.delete(FirebaseFirestore.instance.collection('users').doc(ownerId));
+        }
+
+        await batch.commit();
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Driver deleted successfully.')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting driver: $e')),
+        );
+      }
+    }
+  }
+
   // ✏️ Edit driver details
-  void _showEditDriverDialog(
-    BuildContext context,
-    DocumentSnapshot doc,
-  ) {
+  void _showEditDriverDialog(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
     final name = TextEditingController(text: data['name']);
@@ -172,6 +250,7 @@ class CabDriversScreen extends StatelessWidget {
                 'phone': phone.text.trim(),
                 'vehiclePlate': vehicle.text.trim(),
               });
+              if (!mounted) return;
               Navigator.pop(context);
             },
             child: const Text('Save'),

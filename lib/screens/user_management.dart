@@ -284,6 +284,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
       message: 'Are you sure you want to permanently delete this user and all their associated data from the database?',
     );
 
+    if (!mounted) return;
+
     if (confirm) {
       final String userId = userDoc.id;
       final data = userDoc.data() as Map<String, dynamic>;
@@ -317,10 +319,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         // Commit the batch operation
         await batch.commit();
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User data deleted successfully.')),
         );
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error deleting user: $e')),
         );
@@ -365,6 +369,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                     .doc(userId)
                     .update({'role': newRole});
               }
+              if (!mounted) return;
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(

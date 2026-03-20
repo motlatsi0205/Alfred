@@ -29,6 +29,7 @@ class _TrolleyScreenState extends State<TrolleyScreen> {
 
   Future<void> _loadTrolley() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final data = prefs.getStringList('trolley') ?? [];
     setState(() {
       _trolley = data.map((e) => TrolleyItem.fromJson(jsonDecode(e))).toList();
@@ -44,6 +45,7 @@ class _TrolleyScreenState extends State<TrolleyScreen> {
   Future<void> _clearTrolley() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('trolley');
+    if (!mounted) return;
     setState(() => _trolley.clear());
   }
 
@@ -61,6 +63,7 @@ class _TrolleyScreenState extends State<TrolleyScreen> {
     await _saveTrolley();
 
     final storeTotal = items.fold(0.0, (sum, item) => sum + item.price);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -76,12 +79,21 @@ class _TrolleyScreenState extends State<TrolleyScreen> {
 
     await _clearTrolley();
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           "Checked out all $itemCount items (M ${grandTotal.toStringAsFixed(2)})",
         ),
       ),
+    );
+  }
+
+  Future<void> _onClearTrolleyPressed() async {
+    await _clearTrolley();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Trolley cleared')),
     );
   }
 
@@ -211,12 +223,7 @@ class _TrolleyScreenState extends State<TrolleyScreen> {
           IconButton(
             icon: const Icon(Icons.delete_forever),
             tooltip: 'Clear Trolley',
-            onPressed: () {
-              _clearTrolley();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Trolley cleared')),
-              );
-            },
+            onPressed: _onClearTrolleyPressed,
           ),
         ],
       ),

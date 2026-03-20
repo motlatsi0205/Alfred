@@ -18,14 +18,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _loading = true);
     try {
       final user = await AuthService.registerCustomer(_name.text.trim(), _email.text.trim(), _pass.text.trim());
+      if (!mounted) return;
       if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registered successfully')));
         Navigator.pop(context); // go back to login
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 

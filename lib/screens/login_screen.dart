@@ -4,10 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import '../main.dart'; // customer app home
-import 'store_dashboard.dart';
-import 'driver_dashboard.dart';
 import 'register_screen.dart';
-import 'admin_home.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,12 +27,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (user == null) throw Exception('No user found');
+      if (!mounted) return;
 
       // 🧠 Fetch Firestore user document
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
+
+      if (!mounted) return;
 
       if (!doc.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -49,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // 🛑 Prevent blocked users from logging in
       if (status == 'blocked') {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Your account has been blocked by admin.')),
         );
@@ -56,21 +57,26 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigation()),
       );
 
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Login failed')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 

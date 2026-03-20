@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class PartnerStoresScreen extends StatelessWidget {
+class PartnerStoresScreen extends StatefulWidget {
   const PartnerStoresScreen({super.key});
 
+  @override
+  State<PartnerStoresScreen> createState() => _PartnerStoresScreenState();
+}
+
+class _PartnerStoresScreenState extends State<PartnerStoresScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,7 +64,9 @@ class PartnerStoresScreen extends StatelessWidget {
                       if (value == 'toggle') {
                         _toggleStoreStatus(doc.id, isActive);
                       } else if (value == 'edit') {
-                        _showEditStoreDialog(context, doc);
+                        _showEditStoreDialog(doc);
+                      } else if (value == 'delete') {
+                        _deleteStore(doc);
                       }
                     },
                     itemBuilder: (_) => [
@@ -72,6 +79,10 @@ class PartnerStoresScreen extends StatelessWidget {
                       const PopupMenuItem(
                         value: 'edit',
                         child: Text('Edit Store'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete Store'),
                       ),
                     ],
                   ),
@@ -91,12 +102,79 @@ class PartnerStoresScreen extends StatelessWidget {
         .doc(storeId)
         .update({'isActive': !isActive});
   }
+  
+  Future<bool> _confirmDialog({
+    required String title,
+    required String message,
+  }) async {
+    bool confirmed = false;
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              confirmed = true;
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed;
+  }
+  
+  // 🗑 Delete Store
+  Future<void> _deleteStore(DocumentSnapshot storeDoc) async {
+    final confirm = await _confirmDialog(
+      title: 'Delete Store',
+      message: 'Are you sure you want to permanently delete this store and its associated user data?',
+    );
+
+    if (!mounted) return;
+
+    if (confirm) {
+      try {
+        final WriteBatch batch = FirebaseFirestore.instance.batch();
+        final storeData = storeDoc.data() as Map<String, dynamic>;
+        final String? ownerId = storeData['ownerUserId'];
+
+        // 1. Delete store document
+        batch.delete(storeDoc.reference);
+
+        // 2. If there is an owner, delete their user document
+        if (ownerId != null && ownerId.isNotEmpty) {
+          batch.delete(FirebaseFirestore.instance.collection('users').doc(ownerId));
+        }
+
+        await batch.commit();
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Store deleted successfully.')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting store: $e')),
+        );
+      }
+    }
+  }
 
   // ✏️ Edit store details
-  void _showEditStoreDialog(
-    BuildContext context,
-    DocumentSnapshot doc,
-  ) {
+  void _showEditStoreDialog(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
     final name = TextEditingController(text: data['name']);
@@ -141,6 +219,7 @@ class PartnerStoresScreen extends StatelessWidget {
                 'phone': phone.text.trim(),
                 'location': location.text.trim(),
               });
+              if (!mounted) return;
               Navigator.pop(context);
             },
             child: const Text('Save'),

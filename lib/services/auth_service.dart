@@ -33,7 +33,7 @@ class AuthService {
   static Future<DocumentSnapshot<Map<String, dynamic>>?> getUserDoc(String uid) async {
     final doc = await db.collection('users').doc(uid).get();
     if (!doc.exists) return null;
-    return doc as DocumentSnapshot<Map<String, dynamic>>;
+    return doc;
   }
 
   // Admin: create store account (creates Firebase Auth user + store doc + user doc)

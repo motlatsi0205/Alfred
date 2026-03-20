@@ -23,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _auth.authStateChanges().listen((user) {
+      if (!mounted) return;
       setState(() {
         _user = user;
       });
@@ -36,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile(User user) async {
     final doc = await _firestore.collection('users').doc(user.uid).get();
+    if (!mounted) return;
     if (doc.exists) {
       final data = doc.data();
       setState(() {
@@ -46,6 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _clearProfile() {
+    if (!mounted) return;
     setState(() {
       _nameController.clear();
       _emailController.clear();
@@ -58,6 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'name': _nameController.text.trim(),
     });
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile saved')),
     );
@@ -66,6 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _logout() async {
     await _auth.signOut();
     _clearProfile();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Logged out')),
     );
