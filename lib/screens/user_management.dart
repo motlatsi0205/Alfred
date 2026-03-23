@@ -321,82 +321,47 @@ class _UserManagementScreenState extends State<UserManagementScreen>
               // 🔍 View Details
 
               void _showUserDetails(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final role = data['role'];
 
-                final data = doc.data() as Map<String, dynamic>;
-
-            
-
-                showDialog(
-
-                  context: context,
-
-                  builder: (_) => AlertDialog(
-
-                    title: const Text('User Details'),
-
-                    content: SingleChildScrollView(
-
-                      child: Column(
-
-                        crossAxisAlignment: CrossAxisAlignment.start,
-
-                        children: [
-
-                          _detailRow('Name',
-
-                              data['name'] ?? data['storeName'] ?? '—'),
-
-                          _detailRow('Email', data['email'] ?? '—'),
-
-                          _detailRow('Role', data['role'] ?? '—'),
-
-                          _detailRow('Status', data['status'] ?? 'active'),
-
-                          _detailRow('Phone', data['phone'] ?? '—'),
-
-                          _detailRow('Store ID', data['storeId'] ?? '—'),
-
-                          _detailRow('Driver ID', data['driverId'] ?? '—'),
-
-                          _detailRow(
-
-                            'Created At',
-
-                            data['createdAt'] != null
-
-                                ? (data['createdAt'] as Timestamp)
-
-                                    .toDate()
-
-                                    .toString()
-
-                                : '—',
-
-                          ),
-
-                        ],
-
-                      ),
-
-                    ),
-
-                    actions: [
-
-                      TextButton(
-
-                        onPressed: () => Navigator.pop(context),
-
-                        child: const Text('Close'),
-
-                      ),
-
-                    ],
-
-                  ),
-
-                );
-
-              }
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('User Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _detailRow('Name',
+                  data['name'] ?? data['storeName'] ?? '—'),
+              _detailRow('Email', data['email'] ?? '—'),
+              _detailRow('Role', data['role'] ?? '—'),
+              _detailRow('Status', data['status'] ?? 'active'),
+              _detailRow('Phone', data['phone'] ?? '—'),
+              if (role == 'store')
+                _detailRow('Store ID', data['storeId'] ?? '—'),
+              if (role == 'driver')
+                _detailRow('Driver ID', data['driverId'] ?? '—'),
+              _detailRow(
+                'Created At',
+                data['createdAt'] != null
+                    ? (data['createdAt'] as Timestamp)
+                        .toDate()
+                        .toString()
+                    : '—',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
 
             
 
