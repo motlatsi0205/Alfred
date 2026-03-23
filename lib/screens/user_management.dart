@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:uuid/uuid.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -11,6 +13,8 @@ class UserManagementScreen extends StatefulWidget {
 class _UserManagementScreenState extends State<UserManagementScreen>
     with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Uuid _uuid = const Uuid();
 
   // 🔹 Tabs for Customers, Stores, Drivers
   final List<String> _roles = ['customer', 'store', 'driver'];
@@ -18,6 +22,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   // 🔍 Search controller
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  // ➕ Add user controllers
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _selectedRole = 'store';
 
   @override
   Widget build(BuildContext context) {
@@ -77,8 +87,139 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ),
           ],
         ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showAddUserDialog,
+          backgroundColor: Colors.orange,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
+  }
+
+  void _showAddUserDialog() {
+    _nameController.clear();
+    _emailController.clear();
+    _passwordController.clear();
+    _selectedRole = 'store';
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Create New User'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Name/Store Name'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Password'),
+                obscureText: true,
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                decoration: const InputDecoration(labelText: 'Role'),
+                items: ['store', 'driver']
+                    .map((role) => DropdownMenuItem(
+                          value: role,
+                          child: Text(
+                              '${role[0].toUpperCase()}${role.substring(1)}'),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedRole = value;
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _createUser,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createUser() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All fields are required.')),
+      );
+      return;
+    }
+
+    try {
+      // Create user in Firebase Auth
+      final UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = userCredential.user;
+
+      if (user != null) {
+        // Add user details to Firestore
+        final userId = user.uid;
+        final userData = {
+          'uid': userId,
+          'name': name,
+          'email': email,
+          'role': _selectedRole,
+          'status': 'active',
+          'createdAt': FieldValue.serverTimestamp(),
+          if (_selectedRole == 'store') 'storeId': _uuid.v4(),
+          if (_selectedRole == 'driver') 'driverId': _uuid.v4(),
+        };
+
+        await _firestore.collection('users').doc(userId).set(userData);
+
+        if (mounted) {
+          Navigator.pop(context); // Close the dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User created successfully.')),
+          );
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating user: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An unknown error occurred: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildUserList(String role) {
