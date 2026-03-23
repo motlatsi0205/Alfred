@@ -27,7 +27,18 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   String _selectedRole = 'store';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +111,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     _nameController.clear();
     _emailController.clear();
     _passwordController.clear();
+    _phoneController.clear();
     _selectedRole = 'store';
 
     showDialog(
@@ -125,6 +137,12 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _phoneController,
+                decoration: const InputDecoration(labelText: 'Phone'),
+                keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
@@ -167,8 +185,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+    final phone = _phoneController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('All fields are required.')),
       );
@@ -191,6 +210,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           'uid': userId,
           'name': name,
           'email': email,
+          'phone': phone,
           'role': _selectedRole,
           'status': 'active',
           'createdAt': FieldValue.serverTimestamp(),
