@@ -128,6 +128,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const Divider(height: 40),
+          ListTile(
+            leading: const Icon(Icons.lock, color: Colors.grey),
+            title: const Text('Change Password'),
+            onTap: _showChangePasswordDialog,
+          ),
+          const Divider(height: 40),
           const Text(
             'Settings',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -149,5 +155,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  void _showChangePasswordDialog() {
+    if (_user == null) return;
+
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: oldPasswordController,
+                decoration: const InputDecoration(labelText: 'Old Password'),
+                obscureText: true,
+              ),
+              TextField(
+                controller: newPasswordController,
+                decoration: const InputDecoration(labelText: 'New Password'),
+                obscureText: true,
+              ),
+              TextField(
+                controller: confirmPasswordController,
+                decoration: const InputDecoration(labelText: 'Confirm New Password'),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _changePassword(
+                  oldPasswordController.text,
+                  newPasswordController.text,
+                  confirmPasswordController.text,
+                );
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _changePassword(String oldPassword, String newPassword, String confirmPassword) async {
+    if (newPassword != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('New passwords do not match')),
+      );
+      return;
+    }
+
+    try {
+      final cred = EmailAuthProvider.credential(
+        email: _user!.email!,
+        password: oldPassword,
+      );
+      await _user!.reauthenticateWithCredential(cred);
+      await _user!.updatePassword(newPassword);
+
+      if (mounted) {
+        Navigator.pop(context); // Close the dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password changed successfully')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('An unknown error occurred')),
+        );
+      }
+    }
   }
 }
