@@ -17,13 +17,14 @@ class AuthService {
   }
 
   // register customer
-  static Future<User?> registerCustomer(String name, String email, String password) async {
+  static Future<User?> registerCustomer(String name, String email, String password, String phone) async {
     final cred = await auth.createUserWithEmailAndPassword(email: email, password: password);
     final uid = cred.user!.uid;
     await db.collection('users').doc(uid).set({
       'uid': uid,
       'name': name,
-      'email': email, // Add email to the document
+      'email': email,
+      'phone': phone,
       'role': 'customer',
       'createdAt': FieldValue.serverTimestamp(),
     });
