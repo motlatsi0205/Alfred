@@ -23,6 +23,7 @@ class AuthService {
     await db.collection('users').doc(uid).set({
       'uid': uid,
       'name': name,
+      'email': email, // Add email to the document
       'role': 'customer',
       'createdAt': FieldValue.serverTimestamp(),
     });
