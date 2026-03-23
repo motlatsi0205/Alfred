@@ -220,6 +220,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 
         await _firestore.collection('users').doc(userId).set(userData);
 
+        // Send welcome email
+        await _firestore.collection('mail').add({
+          'to': email,
+          'message': {
+            'subject': 'Welcome to Alfred!',
+            'text':
+                'Hello $name,\n\nYour account has been created.\nYour temporary password is: $password\n\nPlease change it after your first login.\n\nThanks,\nThe Alfred Team',
+          },
+        });
+
         if (mounted) {
           Navigator.pop(context); // Close the dialog
           ScaffoldMessenger.of(context).showSnackBar(
